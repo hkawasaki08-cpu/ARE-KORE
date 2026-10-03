@@ -43,6 +43,7 @@
       align-items: center;
       justify-content: space-between;
       border-bottom: 2px solid var(--primary);
+      flex-shrink: 0;
     }
     header h1 { font-size: 1.05rem; font-weight: bold; }
     header .header-btns button {
@@ -61,6 +62,7 @@
       background: #f8fafc;
       border-bottom: 1px solid var(--border);
       padding: 8px;
+      flex-shrink: 0;
     }
     .sample-title {
       font-size: 0.75rem;
@@ -86,7 +88,7 @@
     }
     .sample-card img {
       width: 100%;
-      height: 60px;
+      height: 55px;
       object-fit: cover;
       border-radius: 4px;
       margin-bottom: 4px;
@@ -134,7 +136,7 @@
       display: block;
     }
 
-    /* アクションボタン（はい／いいえ、メール） */
+    /* クイックアクション */
     .quick-actions {
       display: flex;
       gap: 8px;
@@ -176,6 +178,7 @@
       align-items: center;
       gap: 8px;
       font-size: 0.8rem;
+      flex-shrink: 0;
     }
     .preview-bar img {
       width: 40px;
@@ -192,37 +195,43 @@
       margin-left: auto;
     }
 
-    /* 入力フッター */
+    /* 現場入力フッター（画面約1/4の高さを確保） */
     footer {
       border-top: 1px solid var(--border);
-      padding: 8px 10px;
+      padding: 10px;
       background: white;
       display: flex;
-      align-items: flex-end;
       gap: 8px;
+      height: 24vh; /* 画面全体の約4分の1 */
+      min-height: 140px;
+      flex-shrink: 0;
+    }
+    .footer-left-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 50px;
+      flex-shrink: 0;
     }
     .file-btn {
       background: #e2e8f0;
       border: none;
       border-radius: 6px;
-      width: 42px;
-      height: 42px;
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 1.2rem;
-      flex-shrink: 0;
+      font-size: 1.4rem;
     }
     textarea {
       flex: 1;
-      height: 42px;
-      min-height: 42px;
-      max-height: 100px;
-      padding: 8px 10px;
+      height: 100%;
+      padding: 10px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
+      line-height: 1.4;
       resize: none;
       outline: none;
       font-family: inherit;
@@ -232,11 +241,15 @@
       color: white;
       border: none;
       border-radius: 6px;
-      padding: 0 14px;
-      height: 42px;
+      width: 65px;
+      height: 100%;
       font-weight: bold;
+      font-size: 1rem;
       cursor: pointer;
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     /* 設定モーダル */
@@ -309,11 +322,13 @@
     <button onclick="clearImage()">×</button>
   </div>
 
-  <!-- 入力フッター -->
+  <!-- 現場入力フッター（画面約1/4サイズ） -->
   <footer>
-    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
-    <button class="file-btn" onclick="document.getElementById('fileInput').click()" title="カメラ・写真選択">📷</button>
-    <textarea id="textInput" placeholder="短文入力 (例: ダクターD2 / 3m / ダイマ / 1束 / 明日午後 / 既設エリア)" rows="1"></textarea>
+    <div class="footer-left-btns">
+      <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
+      <button class="file-btn" onclick="document.getElementById('fileInput').click()" title="カメラ・写真選択">📷</button>
+    </div>
+    <textarea id="textInput" placeholder="短文入力 (改行区切りOK)&#10;例:&#10;ダクターD2&#10;3m&#10;ダイマ&#10;1束&#10;明日午後 / 既設エリア"></textarea>
     <button class="send-btn" id="sendBtn" onclick="sendMessage()">送信</button>
   </footer>
 
@@ -413,7 +428,7 @@
   window.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     renderSamplePresets();
-    addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n短文入力（ダクターD2 / 3m / ダイマ...）または写真添付で指示してください！');
+    addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n短文入力または写真添付で指示してください！');
   });
 
   function renderSamplePresets() {
@@ -456,6 +471,23 @@
     document.getElementById('previewBar').style.display = 'none';
   }
 
+  // 503混雑エラー時の自動再試行（リトライ）ラッパー
+  async function fetchWithRetry(url, options, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+      const response = await fetch(url, options);
+      // 503（混雑）以外のステータス（200成功など）ならそのまま返却
+      if (response.status !== 503) {
+        return response;
+      }
+      // 503の場合は 1.5秒, 3.0秒 と待機して自動リトライ
+      if (i < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
+      }
+    }
+    // 最終試行
+    return await fetch(url, options);
+  }
+
   async function sendMessage(overrideText = null) {
     const textInput = document.getElementById('textInput');
     const text = overrideText || textInput.value.trim();
@@ -489,16 +521,18 @@
     const loadingId = addMessageToUI('ai', '解析中...');
 
     try {
-      // エラー指示に基づき gemini-3.8-flash を指定
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+      const options = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
           contents: chatHistory
         })
-      });
+      };
 
+      // 自動リトライ付きでAPIリクエストを実行
+      const response = await fetchWithRetry(url, options, 3);
       const data = await response.json();
       removeMessage(loadingId);
 
