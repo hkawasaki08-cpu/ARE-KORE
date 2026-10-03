@@ -369,7 +369,7 @@
     }
   ];
 
-  /* システムプロンプト（仕様確認・仮受付・最終確認ルール） */
+  /* システムプロンプト */
   const SYSTEM_INSTRUCTION = `
 あなたは現場資材手配・仕様特定アシスタント「アレ・コレ」です。
 職人や管理者の短文入力・現場写真から資材を特定し、手配を支援します。
@@ -408,17 +408,15 @@
 
   // 内部状態
   let chatHistory = [];
-  let currentAttachedImage = null; // Base64 data
+  let currentAttachedImage = null;
   let lastFinalDetails = null;
 
-  // 初期化
   window.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     renderSamplePresets();
     addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n短文入力（ダクターD2 / 3m / ダイマ...）または写真添付で指示してください！');
   });
 
-  // お試しギャラリー描画
   function renderSamplePresets() {
     const container = document.getElementById('sampleScroll');
     container.innerHTML = '';
@@ -441,7 +439,6 @@
     document.getElementById('previewBar').style.display = 'flex';
   }
 
-  // ファイル選択（本体画像・カメラ）
   function handleFileSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -460,7 +457,6 @@
     document.getElementById('previewBar').style.display = 'none';
   }
 
-  // チャット送信処理
   async function sendMessage(overrideText = null) {
     const textInput = document.getElementById('textInput');
     const text = overrideText || textInput.value.trim();
@@ -468,12 +464,10 @@
 
     if (!text && !imageToSend) return;
 
-    // UI表示
     addMessageToUI('user', text, imageToSend);
     if (!overrideText) textInput.value = '';
     clearImage();
 
-    // APIキー取得
     const apiKey = localStorage.getItem('arekore_api_key');
     if (!apiKey) {
       addMessageToUI('ai', '⚠ Gemini APIキーが未設定です。右上の「⚙ 設定」からAPIキーを入力してください。');
@@ -481,7 +475,6 @@
       return;
     }
 
-    // 会話履歴構築
     const parts = [];
     if (text) parts.push({ text: text });
     if (imageToSend && imageToSend.startsWith('data:image')) {
@@ -494,12 +487,11 @@
 
     chatHistory.push({ role: 'user', parts: parts });
 
-    // AI呼び出し中UI
     const loadingId = addMessageToUI('ai', '解析中...');
 
     try {
-      // エンドポイント: v1beta / gemini-1.5-flash-latest を指定
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+      // 最新の安定版モデル: gemini-2.0-flash を指定
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -514,7 +506,6 @@
       if (data.candidates && data.candidates[0].content) {
         const aiReply = data.candidates[0].content.parts[0].text;
         chatHistory.push({ role: 'model', parts: [{ text: aiReply }] });
-        
         addAiMessageWithActions(aiReply);
       } else {
         addMessageToUI('ai', 'エラー: 応答を取得できませんでした。\n' + JSON.stringify(data));
@@ -525,7 +516,6 @@
     }
   }
 
-  // メッセージ表示
   function addMessageToUI(role, text, imgSrc = null) {
     const box = document.getElementById('chatBox');
     const msg = document.createElement('div');
@@ -552,7 +542,6 @@
     if (el) el.remove();
   }
 
-  // AIメッセージとアクションボタンの描画
   function addAiMessageWithActions(text) {
     const box = document.getElementById('chatBox');
     const msg = document.createElement('div');
@@ -562,7 +551,6 @@
     txtNode.innerText = text;
     msg.appendChild(txtNode);
 
-    // 最終確認が含まれる場合
     if (text.includes('最終確認') && text.includes('はい') && text.includes('いいえ')) {
       const actions = document.createElement('div');
       actions.className = 'quick-actions';
@@ -574,7 +562,6 @@
       lastFinalDetails = text;
     }
 
-    // 手配完了が含まれる場合
     if (text.includes('手配完了') || text.includes('手配を確定いたしました')) {
       const mailBtn = document.createElement('button');
       mailBtn.className = 'btn-mail';
@@ -587,7 +574,6 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  // mailto連携起動
   function launchMailClient(bodyText) {
     const to = localStorage.getItem('arekore_mail_to') || 'office@example.com';
     const cc = localStorage.getItem('arekore_mail_cc') || '';
@@ -603,7 +589,6 @@
     window.location.href = mailtoUrl;
   }
 
-  // 設定パネル開閉・保存
   function openSettings() {
     document.getElementById('apiKeyInput').value = localStorage.getItem('arekore_api_key') || '';
     document.getElementById('mailToInput').value = localStorage.getItem('arekore_mail_to') || 'office@example.com';
