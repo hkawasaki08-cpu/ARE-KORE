@@ -18,7 +18,7 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* 文字サイズの確実な切り替え（基準フォントサイズを直接変更） */
+    /* 文字サイズの確実な切り替え（基準フォントサイズ） */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
@@ -26,25 +26,20 @@
       display: flex;
       justify-content: center;
       height: 100dvh;
-      font-size: 15px; /* 標準（普通） */
+      font-size: 15px; /* 普通 */
       transition: font-size 0.15s ease;
     }
 
-    /* デバイス別レスポンシブ基準（普通） */
     @media (min-width: 600px) { body { font-size: 16px; } }
     @media (min-width: 1024px) { body { font-size: 17px; } }
 
-    /* 「中」モード（約1.2倍） */
-    body.font-medium {
-      font-size: 18px;
-    }
+    /* 「中」モード */
+    body.font-medium { font-size: 18px; }
     @media (min-width: 600px) { body.font-medium { font-size: 19px; } }
     @media (min-width: 1024px) { body.font-medium { font-size: 21px; } }
 
-    /* 「大」モード（約1.45倍・老眼・遠隔現場用） */
-    body.font-large {
-      font-size: 21px;
-    }
+    /* 「大」モード */
+    body.font-large { font-size: 21px; }
     @media (min-width: 600px) { body.font-large { font-size: 23px; } }
     @media (min-width: 1024px) { body.font-large { font-size: 25px; } }
 
@@ -82,39 +77,42 @@
       margin-left: 4px;
     }
 
-    /* チャット履歴エリア（bodyのfont-sizeと連動） */
+    /* チャット履歴エリア */
     .chat-box {
       flex: 1;
       overflow-y: auto;
-      padding: 12px;
+      padding: 10px 12px;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
+
+    /* メッセージ枠：左右端まで100%広げる設定 */
     .msg {
-      max-width: 88%;
-      padding: 10px 12px;
+      width: 100%; /* 横幅いっぱい */
+      max-width: 100%;
+      padding: 12px 14px;
       border-radius: 8px;
-      font-size: 1em; /* body基準 */
+      font-size: 1em;
       line-height: 1.5;
       word-break: break-word;
       white-space: pre-wrap;
     }
+    /* 黄色ウィンドウ（ユーザー入力）：左端まで全開 */
     .msg-user {
-      align-self: flex-end;
       background: var(--user-msg);
       border: 1px solid #fde68a;
     }
+    /* メインウィンドウ（AI回答）：右端まで全開 */
     .msg-ai {
-      align-self: flex-start;
       background: var(--ai-msg);
       border: 1px solid var(--border);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
     .msg img {
       max-width: 100%;
       border-radius: 6px;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       display: block;
     }
 
@@ -122,11 +120,11 @@
     .quick-actions {
       display: flex;
       gap: 8px;
-      margin-top: 8px;
+      margin-top: 10px;
     }
     .quick-btn {
       flex: 1;
-      padding: 8px;
+      padding: 10px;
       font-size: 0.95em;
       font-weight: bold;
       border: none;
@@ -139,8 +137,8 @@
       background: #2563eb;
       color: white;
       width: 100%;
-      margin-top: 8px;
-      padding: 10px;
+      margin-top: 10px;
+      padding: 12px;
       border: none;
       border-radius: 6px;
       font-size: 0.95em;
@@ -270,7 +268,7 @@
       padding: 10px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      font-size: 1em; /* body基準 */
+      font-size: 1em;
       line-height: 1.4;
       resize: none;
       outline: none;
@@ -450,7 +448,7 @@
     addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n短文入力（ダクターD2 / 3m / ダイマ...）または写真添付で指示してください！');
   });
 
-  /* 文字サイズ切り替えロジック（確実にクラスを切り替え） */
+  /* 文字サイズ切り替えロジック */
   function setFontSize(size) {
     const body = document.body;
     body.classList.remove('font-medium', 'font-large');
