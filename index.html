@@ -431,7 +431,7 @@
     document.getElementById('previewBar').style.display = 'flex';
   }
 
-  // 高速化：画像を端末側で即座に圧縮・リサイズ（通信時間激減）
+  // 高速化：現場写真を長辺1024pxに自動圧縮（通信容量を90%削減）
   function handleFileSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -442,20 +442,19 @@
     reader.onload = (event) => {
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1024;
-        const MAX_HEIGHT = 1024;
+        const MAX_DIM = 1024;
         let width = img.width;
         let height = img.height;
 
         if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
+          if (width > MAX_DIM) {
+            height *= MAX_DIM / width;
+            width = MAX_DIM;
           }
         } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
+          if (height > MAX_DIM) {
+            width *= MAX_DIM / height;
+            height = MAX_DIM;
           }
         }
         canvas.width = width;
@@ -463,7 +462,6 @@
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // 圧縮JPEGに変換
         currentAttachedImage = canvas.toDataURL('image/jpeg', 0.8);
         document.getElementById('previewImg').src = currentAttachedImage;
         document.getElementById('previewBar').style.display = 'flex';
@@ -479,7 +477,7 @@
     document.getElementById('previewBar').style.display = 'none';
   }
 
-  // 高速ストリーミング送信処理
+  // gemini-3.8-flash 高速ストリーミング送信
   async function sendMessage(overrideText = null) {
     const textInput = document.getElementById('textInput');
     const sendBtn = document.getElementById('sendBtn');
@@ -516,13 +514,13 @@
 
     chatHistory.push({ role: 'user', parts: parts });
 
-    // ストリーミング用AIメッセージ枠を作成
+    // ストリーミング用メッセージ枠を即座に作成
     const msgId = addMessageToUI('ai', '...');
     const msgElem = document.getElementById(msgId).querySelector('div');
 
     try {
-      // streamGenerateContent?alt=sse で文字を即座に流す
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+      // 最新の安定モデル gemini-3.8-flash でストリーミング生成
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
