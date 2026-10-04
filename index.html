@@ -34,7 +34,6 @@
       position: relative;
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
     }
-    /* ヘッダー */
     header {
       background: #1e293b;
       color: white;
@@ -100,7 +99,7 @@
       text-overflow: ellipsis;
     }
 
-    /* チャットエリア */
+    /* チャット履歴表示部 */
     .chat-box {
       flex: 1;
       overflow-y: auto;
@@ -136,7 +135,7 @@
       display: block;
     }
 
-    /* クイックアクション */
+    /* クイックアクションボタン */
     .quick-actions {
       display: flex;
       gap: 8px;
@@ -202,7 +201,7 @@
       background: white;
       display: flex;
       gap: 8px;
-      height: 24vh; /* 画面全体の約4分の1 */
+      height: 24vh;
       min-height: 140px;
       flex-shrink: 0;
     }
@@ -251,6 +250,10 @@
       align-items: center;
       justify-content: center;
     }
+    .send-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
 
     /* 設定モーダル */
     .modal {
@@ -297,7 +300,6 @@
 <body>
 
 <div class="app-container">
-  <!-- ヘッダー -->
   <header>
     <h1>アレ・コレ（ARE-KORE）</h1>
     <div class="header-btns">
@@ -306,7 +308,7 @@
     </div>
   </header>
 
-  <!-- お試し資材ギャラリー（管理者設定） -->
+  <!-- お試しギャラリー -->
   <div class="sample-section">
     <div class="sample-title">▼ お試しサンプル（タップでセット）</div>
     <div class="sample-scroll" id="sampleScroll"></div>
@@ -322,7 +324,7 @@
     <button onclick="clearImage()">×</button>
   </div>
 
-  <!-- 現場入力フッター（画面約1/4サイズ） -->
+  <!-- 入力フッター -->
   <footer>
     <div class="footer-left-btns">
       <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
@@ -357,9 +359,6 @@
 </div>
 
 <script>
-  /* =========================================================
-     管理者設定：お試しプリセット画像リスト
-     ========================================================= */
   const SAMPLE_PRESETS = [
     {
       id: "sample_01",
@@ -384,7 +383,6 @@
     }
   ];
 
-  /* システムプロンプト */
   const SYSTEM_INSTRUCTION = `
 あなたは現場資材手配・仕様特定アシスタント「アレ・コレ」です。
 職人や管理者の短文入力・現場写真から資材を特定し、手配を支援します。
@@ -428,7 +426,7 @@
   window.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     renderSamplePresets();
-    addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n短文入力または写真添付で指示してください！');
+    addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n短文入力（ダクターD2 / 3m / ダイマ...）または写真添付で指示してください！');
   });
 
   function renderSamplePresets() {
@@ -471,29 +469,49 @@
     document.getElementById('previewBar').style.display = 'none';
   }
 
-  // 503混雑エラー時の自動再試行（リトライ）ラッパー
-  async function fetchWithRetry(url, options, maxRetries = 3) {
-    for (let i = 0; i < maxRetries; i++) {
-      const response = await fetch(url, options);
-      // 503（混雑）以外のステータス（200成功など）ならそのまま返却
-      if (response.status !== 503) {
-        return response;
-      }
-      // 503の場合は 1.5秒, 3.0秒 と待機して自動リトライ
-      if (i < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
+  // 複数モデル自動フォールバック＋再試行ラッパー
+  async function callGeminiApi(apiKey, requestBody) {
+    // 安定モデル → 新規モデル の順でフォールバック
+    const models = ['gemini-2.5-flash', 'gemini-3.8-flash'];
+
+    for (let m = 0; m < models.length; m++) {
+      const model = models[m];
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      for (let i = 0; i < 2; i++) {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (response.status === 200) {
+          return await response.json();
+        }
+
+        // 混雑(503)または無料枠制限(429)の場合のみ待機
+        if (response.status === 503 || response.status === 429) {
+          await new Promise(r => setTimeout(r, 2000 * (i + 1)));
+          continue;
+        }
+
+        // 404等のモデル不適合なら次のモデルへ直ちに移行
+        break;
       }
     }
-    // 最終試行
-    return await fetch(url, options);
+    throw new Error('APIの混雑または利用枠上限に達しました。数十秒待って再送信してください。');
   }
 
   async function sendMessage(overrideText = null) {
     const textInput = document.getElementById('textInput');
+    const sendBtn = document.getElementById('sendBtn');
     const text = overrideText || textInput.value.trim();
     const imageToSend = currentAttachedImage;
 
     if (!text && !imageToSend) return;
+
+    sendBtn.disabled = true;
+    sendBtn.innerText = '解析中';
 
     addMessageToUI('user', text, imageToSend);
     if (!overrideText) textInput.value = '';
@@ -502,6 +520,8 @@
     const apiKey = localStorage.getItem('arekore_api_key');
     if (!apiKey) {
       addMessageToUI('ai', '⚠ Gemini APIキーが未設定です。右上の「⚙ 設定」からAPIキーを入力してください。');
+      sendBtn.disabled = false;
+      sendBtn.innerText = '送信';
       openSettings();
       return;
     }
@@ -517,23 +537,15 @@
     }
 
     chatHistory.push({ role: 'user', parts: parts });
-
-    const loadingId = addMessageToUI('ai', '解析中...');
+    const loadingId = addMessageToUI('ai', '現場データを照合中...');
 
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
-      const options = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-          contents: chatHistory
-        })
+      const requestBody = {
+        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+        contents: chatHistory
       };
 
-      // 自動リトライ付きでAPIリクエストを実行
-      const response = await fetchWithRetry(url, options, 3);
-      const data = await response.json();
+      const data = await callGeminiApi(apiKey, requestBody);
       removeMessage(loadingId);
 
       if (data.candidates && data.candidates[0].content) {
@@ -545,7 +557,10 @@
       }
     } catch (err) {
       removeMessage(loadingId);
-      addMessageToUI('ai', '通信エラーが発生しました: ' + err.message);
+      addMessageToUI('ai', '⚠ ' + err.message);
+    } finally {
+      sendBtn.disabled = false;
+      sendBtn.innerText = '送信';
     }
   }
 
