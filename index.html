@@ -14,35 +14,11 @@
       --ai-msg: #ffffff;
       --border: #e5e7eb;
       --text: #1f2937;
-
-      /* レスポンシブ文字サイズ基準（スマホ標準） */
-      --font-scale: 1;
-      --font-chat: calc(0.9rem * var(--font-scale));
-      --font-input: calc(0.95rem * var(--font-scale));
     }
-
-    /* タブレット向け調整 */
-    @media (min-width: 600px) {
-      :root {
-        --font-chat: calc(1.0rem * var(--font-scale));
-        --font-input: calc(1.05rem * var(--font-scale));
-      }
-    }
-
-    /* PC・大画面向け調整 */
-    @media (min-width: 1024px) {
-      :root {
-        --font-chat: calc(1.05rem * var(--font-scale));
-        --font-input: calc(1.1rem * var(--font-scale));
-      }
-    }
-
-    /* 文字サイズモード */
-    body.font-normal { --font-scale: 1.0; }
-    body.font-medium { --font-scale: 1.18; }
-    body.font-large  { --font-scale: 1.35; }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* 文字サイズの確実な切り替え（基準フォントサイズを直接変更） */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
@@ -50,7 +26,28 @@
       display: flex;
       justify-content: center;
       height: 100dvh;
+      font-size: 15px; /* 標準（普通） */
+      transition: font-size 0.15s ease;
     }
+
+    /* デバイス別レスポンシブ基準（普通） */
+    @media (min-width: 600px) { body { font-size: 16px; } }
+    @media (min-width: 1024px) { body { font-size: 17px; } }
+
+    /* 「中」モード（約1.2倍） */
+    body.font-medium {
+      font-size: 18px;
+    }
+    @media (min-width: 600px) { body.font-medium { font-size: 19px; } }
+    @media (min-width: 1024px) { body.font-medium { font-size: 21px; } }
+
+    /* 「大」モード（約1.45倍・老眼・遠隔現場用） */
+    body.font-large {
+      font-size: 21px;
+    }
+    @media (min-width: 600px) { body.font-large { font-size: 23px; } }
+    @media (min-width: 1024px) { body.font-large { font-size: 25px; } }
+
     .app-container {
       width: 100%;
       max-width: 600px;
@@ -85,7 +82,7 @@
       margin-left: 4px;
     }
 
-    /* チャット履歴エリア */
+    /* チャット履歴エリア（bodyのfont-sizeと連動） */
     .chat-box {
       flex: 1;
       overflow-y: auto;
@@ -98,8 +95,8 @@
       max-width: 88%;
       padding: 10px 12px;
       border-radius: 8px;
-      font-size: var(--font-chat);
-      line-height: 1.45;
+      font-size: 1em; /* body基準 */
+      line-height: 1.5;
       word-break: break-word;
       white-space: pre-wrap;
     }
@@ -130,7 +127,7 @@
     .quick-btn {
       flex: 1;
       padding: 8px;
-      font-size: var(--font-chat);
+      font-size: 0.95em;
       font-weight: bold;
       border: none;
       border-radius: 6px;
@@ -146,7 +143,7 @@
       padding: 10px;
       border: none;
       border-radius: 6px;
-      font-size: var(--font-chat);
+      font-size: 0.95em;
       font-weight: bold;
       cursor: pointer;
       display: flex;
@@ -193,22 +190,28 @@
     .font-size-group {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
+    }
+    .font-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-right: 2px;
+      font-weight: bold;
     }
     .font-btn {
       background: #ffffff;
       border: 1px solid #cbd5e1;
       color: #475569;
-      padding: 4px 8px;
+      padding: 5px 10px;
       border-radius: 4px;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       cursor: pointer;
       font-weight: bold;
     }
     .font-btn.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
+      background: var(--primary) !important;
+      color: white !important;
+      border-color: var(--primary-dark) !important;
     }
     .sample-mini-group {
       display: flex;
@@ -218,10 +221,10 @@
       background: #ffffff;
       border: 1px solid #cbd5e1;
       color: #334155;
-      width: 30px;
-      height: 28px;
+      width: 32px;
+      height: 30px;
       border-radius: 4px;
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       font-weight: bold;
       cursor: pointer;
       display: flex;
@@ -267,7 +270,7 @@
       padding: 10px;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
-      font-size: var(--font-input);
+      font-size: 1em; /* body基準 */
       line-height: 1.4;
       resize: none;
       outline: none;
@@ -335,10 +338,9 @@
     }
   </style>
 </head>
-<body class="font-normal">
+<body>
 
 <div class="app-container">
-  <!-- ヘッダー -->
   <header>
     <h1>アレ・コレ（ARE-KORE）</h1>
     <div class="header-btns">
@@ -347,21 +349,19 @@
     </div>
   </header>
 
-  <!-- チャット履歴 -->
   <div class="chat-box" id="chatBox"></div>
 
-  <!-- 画像プレビュー -->
   <div class="preview-bar" id="previewBar">
     <img id="previewImg" src="">
     <span id="previewText">画像添付中</span>
     <button onclick="clearImage()">×</button>
   </div>
 
-  <!-- ツールバー：左に文字サイズ切替、右に小型サンプルボタン -->
+  <!-- ツールバー -->
   <div class="action-toolbar">
     <div class="font-size-group">
-      <span style="font-size: 0.72rem; color: #64748b; margin-right: 2px;">文字:</span>
-      <button class="font-btn active" id="btnFontNormal" onclick="setFontSize('normal')">普通</button>
+      <span class="font-label">文字:</span>
+      <button class="font-btn" id="btnFontNormal" onclick="setFontSize('normal')">普通</button>
       <button class="font-btn" id="btnFontMedium" onclick="setFontSize('medium')">中</button>
       <button class="font-btn" id="btnFontLarge" onclick="setFontSize('large')">大</button>
     </div>
@@ -404,7 +404,6 @@
 </div>
 
 <script>
-  /* システムプロンプト */
   const SYSTEM_INSTRUCTION = `
 あなたは現場資材手配・仕様特定アシスタント「アレ・コレ」です。
 職人や管理者の短文入力・現場写真から資材を特定し、手配を支援します。
@@ -451,22 +450,27 @@
     addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n短文入力（ダクターD2 / 3m / ダイマ...）または写真添付で指示してください！');
   });
 
-  /* 文字サイズ切り替えロジック */
+  /* 文字サイズ切り替えロジック（確実にクラスを切り替え） */
   function setFontSize(size) {
-    document.body.classList.remove('font-normal', 'font-medium', 'font-large');
-    document.getElementById('btnFontNormal').classList.remove('active');
-    document.getElementById('btnFontMedium').classList.remove('active');
-    document.getElementById('btnFontLarge').classList.remove('active');
+    const body = document.body;
+    body.classList.remove('font-medium', 'font-large');
+
+    const btnNormal = document.getElementById('btnFontNormal');
+    const btnMedium = document.getElementById('btnFontMedium');
+    const btnLarge = document.getElementById('btnFontLarge');
+
+    btnNormal.classList.remove('active');
+    btnMedium.classList.remove('active');
+    btnLarge.classList.remove('active');
 
     if (size === 'medium') {
-      document.body.classList.add('font-medium');
-      document.getElementById('btnFontMedium').classList.add('active');
+      body.classList.add('font-medium');
+      btnMedium.classList.add('active');
     } else if (size === 'large') {
-      document.body.classList.add('font-large');
-      document.getElementById('btnFontLarge').classList.add('active');
+      body.classList.add('font-large');
+      btnLarge.classList.add('active');
     } else {
-      document.body.classList.add('font-normal');
-      document.getElementById('btnFontNormal').classList.add('active');
+      btnNormal.classList.add('active');
       size = 'normal';
     }
     localStorage.setItem('arekore_font_size', size);
@@ -477,13 +481,12 @@
     setFontSize(savedSize);
   }
 
-  /* サンプルボタン処理（後で指示内容を実装） */
+  /* サンプルボタン */
   function onSampleClick(num) {
-    // 指示内容を受け取り次第ここに処理を記載
     console.log(`Sample button ${num} clicked`);
   }
 
-  /* 写真圧縮・リサイズ（通信時間大幅短縮） */
+  /* 画像リサイズ・圧縮 */
   function handleFileSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
