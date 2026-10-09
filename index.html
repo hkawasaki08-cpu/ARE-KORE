@@ -18,7 +18,6 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* 文字サイズの確実な切り替え（基準フォントサイズ） */
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
@@ -26,19 +25,17 @@
       display: flex;
       justify-content: center;
       height: 100dvh;
-      font-size: 15px; /* 普通 */
+      font-size: 15px;
       transition: font-size 0.15s ease;
     }
 
     @media (min-width: 600px) { body { font-size: 16px; } }
     @media (min-width: 1024px) { body { font-size: 17px; } }
 
-    /* 「中」モード */
     body.font-medium { font-size: 18px; }
     @media (min-width: 600px) { body.font-medium { font-size: 19px; } }
     @media (min-width: 1024px) { body.font-medium { font-size: 21px; } }
 
-    /* 「大」モード */
     body.font-large { font-size: 21px; }
     @media (min-width: 600px) { body.font-large { font-size: 23px; } }
     @media (min-width: 1024px) { body.font-large { font-size: 25px; } }
@@ -65,7 +62,21 @@
       border-bottom: 2px solid var(--primary);
       flex-shrink: 0;
     }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     header h1 { font-size: 1.05rem; font-weight: bold; }
+    .network-badge {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+    .badge-online { background: #10b981; color: white; }
+    .badge-offline { background: #ef4444; color: white; }
+
     header .header-btns button {
       background: #334155;
       color: white;
@@ -75,6 +86,19 @@
       font-size: 0.8rem;
       cursor: pointer;
       margin-left: 4px;
+    }
+
+    /* 保留キュー通知バナー */
+    .queue-banner {
+      display: none;
+      background: #fef08a;
+      color: #854d0e;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid #fde047;
+      flex-shrink: 0;
     }
 
     /* チャット履歴エリア */
@@ -87,9 +111,8 @@
       gap: 12px;
     }
 
-    /* メッセージ枠：左右端まで100%広げる設定 */
     .msg {
-      width: 100%; /* 横幅いっぱい */
+      width: 100%;
       max-width: 100%;
       padding: 12px 14px;
       border-radius: 8px;
@@ -98,16 +121,18 @@
       word-break: break-word;
       white-space: pre-wrap;
     }
-    /* 黄色ウィンドウ（ユーザー入力）：左端まで全開 */
     .msg-user {
       background: var(--user-msg);
       border: 1px solid #fde68a;
     }
-    /* メインウィンドウ（AI回答）：右端まで全開 */
     .msg-ai {
       background: var(--ai-msg);
       border: 1px solid var(--border);
       box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .msg-pending {
+      border: 2px dashed #f59e0b !important;
+      opacity: 0.9;
     }
     .msg img {
       max-width: 100%;
@@ -116,7 +141,6 @@
       display: block;
     }
 
-    /* クイックアクションボタン */
     .quick-actions {
       display: flex;
       gap: 8px;
@@ -150,7 +174,6 @@
       gap: 6px;
     }
 
-    /* 画像プレビュー */
     .preview-bar {
       display: none;
       padding: 6px 12px;
@@ -175,7 +198,7 @@
       margin-left: auto;
     }
 
-    /* 現場操作ツールバー（文字サイズ＋小型サンプルボタン） */
+    /* ツールバー */
     .action-toolbar {
       background: #f8fafc;
       border-top: 1px solid var(--border);
@@ -229,11 +252,8 @@
       align-items: center;
       justify-content: center;
     }
-    .mini-sample-btn:active {
-      background: #e2e8f0;
-    }
 
-    /* 現場入力フッター（画面約1/4の高さを確保） */
+    /* 入力フッター */
     footer {
       border-top: 1px solid var(--border);
       padding: 10px;
@@ -313,6 +333,13 @@
       max-width: 400px;
     }
     .modal-content h2 { font-size: 1rem; margin-bottom: 12px; }
+    .status-box {
+      background: #f1f5f9;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-bottom: 10px;
+    }
     .modal-content label { display: block; font-size: 0.8rem; margin: 8px 0 4px; color: #475569; }
     .modal-content input {
       width: 100%;
@@ -340,12 +367,20 @@
 
 <div class="app-container">
   <header>
-    <h1>アレ・コレ（ARE-KORE）</h1>
+    <div class="header-left">
+      <h1>アレ・コレ</h1>
+      <span class="network-badge badge-online" id="networkBadge">オンライン</span>
+    </div>
     <div class="header-btns">
       <button onclick="resetChat()">クリア</button>
       <button onclick="openSettings()">⚙ 設定</button>
     </div>
   </header>
+
+  <!-- オフライン保留バナー -->
+  <div class="queue-banner" id="queueBanner">
+    圏外中に記録した手配が <span id="queueCount">0</span> 件保留中（電波復帰時に自動送信）
+  </div>
 
   <div class="chat-box" id="chatBox"></div>
 
@@ -355,7 +390,6 @@
     <button onclick="clearImage()">×</button>
   </div>
 
-  <!-- ツールバー -->
   <div class="action-toolbar">
     <div class="font-size-group">
       <span class="font-label">文字:</span>
@@ -370,7 +404,6 @@
     </div>
   </div>
 
-  <!-- 現場入力フッター -->
   <footer>
     <div class="footer-left-btns">
       <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)">
@@ -380,17 +413,17 @@
     <button class="send-btn" id="sendBtn" onclick="sendMessage()">送信</button>
   </footer>
 
-  <!-- 設定モーダル -->
+  <!-- 設定モーダル（APIキーはQRコードから自動登録・非表示化対応） -->
   <div class="modal" id="settingsModal">
     <div class="modal-content">
-      <h2>⚙ アプリ・メール送信設定</h2>
-      <label>Gemini APIキー:</label>
-      <input type="password" id="apiKeyInput" placeholder="AI StudioのAPIキーを入力">
+      <h2>⚙ アプリ・現場設定</h2>
+      <div class="status-box" id="authStatusText">認証状態: 確認中...</div>
+      
       <label>送信先メールアドレス (To):</label>
       <input type="email" id="mailToInput" placeholder="office@example.com">
       <label>CC メールアドレス (任意):</label>
       <input type="email" id="mailCcInput" placeholder="site-cc@example.com">
-      <label>担当者名 / 工区名 (任意):</label>
+      <label>担当者名 / 工区名:</label>
       <input type="text" id="senderNameInput" placeholder="例: 電気A工区 花岡">
 
       <div class="modal-actions">
@@ -402,16 +435,17 @@
 </div>
 
 <script>
+  /* システムプロンプト（電材＋ユニカアンカー含む） */
   const SYSTEM_INSTRUCTION = `
-あなたは現場資材手配・仕様特定アシスタント「アレ・コレ」です。
+あなたは現場資材手配・仕様特定アシスタント「アレ・コレ君」です。
 職人や管理者の短文入力・現場写真から資材を特定し、手配を支援します。
 
-【基本カタログ】
-ネグロス電工、未来工業、丸井産業、共同カイテック
+【基本カタログ：電材関係グループ】
+ネグロス電工、未来工業、丸井産業、共同カイテック、ユニカ（unika：あと施工アンカー等）
 
 【重要：仕様確認ルール】
-チャンネル・レール類（ダクター等）は「定尺（2m/3m/4m等）」と「材質・表面処理（ダイマ、ドブ、SUS等）」が必須です。
-これらが抜けている場合、勝手に補完せず必ず【仮受付フォーマット】で聞き返してください。
+1. チャンネル・レール類（ダクター等）: 「定尺（2m/3m/4m等）」と「材質・表面処理（ダイマ、ドブ、SUS等）」を必ず確認。
+2. あと施工アンカー類: 「母材（コンクリート/中空壁/ALC等）」「ねじ呼称（Mねじ/Wねじ・サイズ）」「下穴穿孔径」「材質（スチール/ドブ/ステンレス）」の整合性を確認。
 
 【出力フォーマット】
 1. 不足がある場合：
@@ -430,7 +464,7 @@
 ・数量: [数量]
 ・希望納期日: [納期]
 ・納品場所: [場所]
-※ダクタークリップや適合ジョイント金具の追加要否を一言添える。
+※適合部材・ドリル穿孔径等の施工確認メモを一言添える。
 「上記の内容で手配・発注を確定してもよろしいでしょうか？（はい／いいえ）」
 
 3. 「はい」で承認された場合：
@@ -442,113 +476,165 @@
   let currentAttachedImage = null;
   let lastFinalDetails = null;
 
+  /* Service Workerの動的登録（PWAオフラインキャッシュ） */
+  if ('serviceWorker' in navigator) {
+    const swCode = `
+      const CACHE_NAME = 'arekore-cache-v1';
+      self.addEventListener('install', (e) => {
+        e.waitUntil(
+          caches.open(CACHE_NAME).then((cache) => cache.addAll([self.location.href]))
+        );
+        self.skipWaiting();
+      });
+      self.addEventListener('activate', (e) => {
+        e.waitUntil(self.clients.claim());
+      });
+      self.addEventListener('fetch', (e) => {
+        if (e.request.method !== 'GET') return;
+        e.respondWith(
+          fetch(e.request).catch(() => caches.match(e.request))
+        );
+      });
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+  }
+
   window.addEventListener('DOMContentLoaded', () => {
+    initAuthFromHash();
     loadSettings();
     initFontSize();
-    addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n短文入力（ダクターD2 / 3m / ダイマ...）または写真添付で指示してください！');
+    initNetworkMonitor();
+    checkOfflineQueue();
+    addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n電波のない地下・ピット内でも下書き蓄積可能です！');
   });
 
-  /* 文字サイズ切り替えロジック */
-  function setFontSize(size) {
-    const body = document.body;
-    body.classList.remove('font-medium', 'font-large');
+  /* URLハッシュ式ワンショット認証（#key=...） */
+  function initAuthFromHash() {
+    const hash = window.location.hash.substring(1);
+    if (!hash) return;
 
-    const btnNormal = document.getElementById('btnFontNormal');
-    const btnMedium = document.getElementById('btnFontMedium');
-    const btnLarge = document.getElementById('btnFontLarge');
+    const params = new URLSearchParams(hash);
+    const key = params.get('key');
+    const to = params.get('to');
+    const name = params.get('name');
 
-    btnNormal.classList.remove('active');
-    btnMedium.classList.remove('active');
-    btnLarge.classList.remove('active');
-
-    if (size === 'medium') {
-      body.classList.add('font-medium');
-      btnMedium.classList.add('active');
-    } else if (size === 'large') {
-      body.classList.add('font-large');
-      btnLarge.classList.add('active');
-    } else {
-      btnNormal.classList.add('active');
-      size = 'normal';
+    let updated = false;
+    if (key) {
+      localStorage.setItem('arekore_api_key', key.trim());
+      updated = true;
     }
-    localStorage.setItem('arekore_font_size', size);
+    if (to) {
+      localStorage.setItem('arekore_mail_to', to.trim());
+      updated = true;
+    }
+    if (name) {
+      localStorage.setItem('arekore_sender_name', name.trim());
+      updated = true;
+    }
+
+    if (updated) {
+      history.replaceState(null, '', window.location.pathname);
+      alert('初期設定（QR認証）が完了しました。現場でご利用いただけます。');
+    }
   }
 
-  function initFontSize() {
-    const savedSize = localStorage.getItem('arekore_font_size') || 'normal';
-    setFontSize(savedSize);
-  }
-
-  /* サンプルボタン */
-  function onSampleClick(num) {
-    console.log(`Sample button ${num} clicked`);
-  }
-
-  /* 画像リサイズ・圧縮 */
-  function handleFileSelect(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const img = new Image();
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_DIM = 1024;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_DIM) {
-            height *= MAX_DIM / width;
-            width = MAX_DIM;
-          }
-        } else {
-          if (height > MAX_DIM) {
-            width *= MAX_DIM / height;
-            height = MAX_DIM;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        currentAttachedImage = canvas.toDataURL('image/jpeg', 0.8);
-        document.getElementById('previewImg').src = currentAttachedImage;
-        document.getElementById('previewBar').style.display = 'flex';
-      };
-      img.src = event.target.result;
+  /* ネットワーク監視 */
+  function initNetworkMonitor() {
+    const updateBadge = () => {
+      const badge = document.getElementById('networkBadge');
+      if (navigator.onLine) {
+        badge.className = 'network-badge badge-online';
+        badge.innerText = 'オンライン';
+        processOfflineQueue(); // 電波復帰時に自動同期
+      } else {
+        badge.className = 'network-badge badge-offline';
+        badge.innerText = '▲ オフライン (圏外)';
+      }
     };
-    reader.readAsDataURL(file);
+    window.addEventListener('online', updateBadge);
+    window.addEventListener('offline', updateBadge);
+    updateBadge();
   }
 
-  function clearImage() {
-    currentAttachedImage = null;
-    document.getElementById('fileInput').value = '';
-    document.getElementById('previewBar').style.display = 'none';
+  /* オフライン・キュー管理 */
+  function getQueue() {
+    return JSON.parse(localStorage.getItem('arekore_offline_queue') || '[]');
   }
 
-  /* 高速ストリーミング送信処理 */
+  function saveQueue(queue) {
+    localStorage.setItem('arekore_offline_queue', JSON.stringify(queue));
+    checkOfflineQueue();
+  }
+
+  function checkOfflineQueue() {
+    const queue = getQueue();
+    const banner = document.getElementById('queueBanner');
+    const countEl = document.getElementById('queueCount');
+    if (queue.length > 0) {
+      banner.style.display = 'block';
+      countEl.innerText = queue.length;
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  async function processOfflineQueue() {
+    const queue = getQueue();
+    if (queue.length === 0) return;
+
+    // 先頭から順次自動送信
+    const item = queue.shift();
+    saveQueue(queue);
+
+    addMessageToUI('ai', `📡 電波復帰を検知しました。\n保留中の手配（${item.text ? item.text.substring(0, 15) : '写真'}...）を自動送信します。`);
+    await sendMessageDirect(item.text, item.image);
+
+    // 次のキューがあれば再帰処理
+    if (queue.length > 0) {
+      setTimeout(processOfflineQueue, 1500);
+    }
+  }
+
+  /* メッセージ送信コントローラー */
   async function sendMessage(overrideText = null) {
     const textInput = document.getElementById('textInput');
-    const sendBtn = document.getElementById('sendBtn');
     const text = overrideText || textInput.value.trim();
     const imageToSend = currentAttachedImage;
 
     if (!text && !imageToSend) return;
 
+    // 圏外の場合はオフラインキューに即時退避
+    if (!navigator.onLine) {
+      const queue = getQueue();
+      queue.push({ text: text, image: imageToSend, timestamp: Date.now() });
+      saveQueue(queue);
+
+      const msgId = addMessageToUI('user', `[圏外保留]\n${text}`, imageToSend);
+      document.getElementById(msgId).classList.add('msg-pending');
+      addMessageToUI('ai', '📦 現在オフラインです。手配内容を端末内に安全に保存しました。\n地上や詰所に戻り次第、自動でAIに送信・手配します。');
+
+      if (!overrideText) textInput.value = '';
+      clearImage();
+      return;
+    }
+
+    if (!overrideText) textInput.value = '';
+    clearImage();
+    await sendMessageDirect(text, imageToSend);
+  }
+
+  /* 実際のAPIコール処理 */
+  async function sendMessageDirect(text, imageToSend) {
+    const sendBtn = document.getElementById('sendBtn');
     sendBtn.disabled = true;
     sendBtn.innerText = '送信中';
 
     addMessageToUI('user', text, imageToSend);
-    if (!overrideText) textInput.value = '';
-    clearImage();
 
     const apiKey = localStorage.getItem('arekore_api_key');
     if (!apiKey) {
-      addMessageToUI('ai', '⚠ Gemini APIキーが未設定です。右上の「⚙ 設定」からAPIキーを入力してください。');
+      addMessageToUI('ai', '⚠ APIキーが設定されていません。管理者のQRコードを読み取ってください。');
       sendBtn.disabled = false;
       sendBtn.innerText = '送信';
       openSettings();
@@ -618,17 +704,96 @@
       attachActionsToMessage(document.getElementById(msgId), fullText);
 
     } catch (err) {
-      msgElem.innerText = '⚠ エラー: ' + err.message;
+      msgElem.innerText = '⚠ 送信エラー: ' + err.message;
     } finally {
       sendBtn.disabled = false;
       sendBtn.innerText = '送信';
     }
   }
 
+  /* UI・フォント・画像共通ロジック */
+  function setFontSize(size) {
+    const body = document.body;
+    body.classList.remove('font-medium', 'font-large');
+
+    const btnNormal = document.getElementById('btnFontNormal');
+    const btnMedium = document.getElementById('btnFontMedium');
+    const btnLarge = document.getElementById('btnFontLarge');
+
+    btnNormal.classList.remove('active');
+    btnMedium.classList.remove('active');
+    btnLarge.classList.remove('active');
+
+    if (size === 'medium') {
+      body.classList.add('font-medium');
+      btnMedium.classList.add('active');
+    } else if (size === 'large') {
+      body.classList.add('font-large');
+      btnLarge.classList.add('active');
+    } else {
+      btnNormal.classList.add('active');
+      size = 'normal';
+    }
+    localStorage.setItem('arekore_font_size', size);
+  }
+
+  function initFontSize() {
+    setFontSize(localStorage.getItem('arekore_font_size') || 'normal');
+  }
+
+  function onSampleClick(num) {
+    console.log(`Sample button ${num} clicked`);
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 1024;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height *= MAX_DIM / width;
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width *= MAX_DIM / height;
+            height = MAX_DIM;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        currentAttachedImage = canvas.toDataURL('image/jpeg', 0.8);
+        document.getElementById('previewImg').src = currentAttachedImage;
+        document.getElementById('previewBar').style.display = 'flex';
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearImage() {
+    currentAttachedImage = null;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('previewBar').style.display = 'none';
+  }
+
   function addMessageToUI(role, text, imgSrc = null) {
     const box = document.getElementById('chatBox');
     const msg = document.createElement('div');
-    const id = 'msg_' + Date.now();
+    const id = 'msg_' + Date.now() + Math.random().toString(36).substring(2, 5);
     msg.id = id;
     msg.className = `msg ${role === 'user' ? 'msg-user' : 'msg-ai'}`;
 
@@ -684,7 +849,14 @@
   }
 
   function openSettings() {
-    document.getElementById('apiKeyInput').value = localStorage.getItem('arekore_api_key') || '';
+    const apiKey = localStorage.getItem('arekore_api_key');
+    const statusText = document.getElementById('authStatusText');
+    if (apiKey) {
+      statusText.innerHTML = '<span style="color:#10b981; font-weight:bold;">● 認証済み（利用可能）</span>';
+    } else {
+      statusText.innerHTML = '<span style="color:#ef4444; font-weight:bold;">▲ 未認証（管理者のQRコードを読み取ってください）</span>';
+    }
+
     document.getElementById('mailToInput').value = localStorage.getItem('arekore_mail_to') || 'office@example.com';
     document.getElementById('mailCcInput').value = localStorage.getItem('arekore_mail_cc') || '';
     document.getElementById('senderNameInput').value = localStorage.getItem('arekore_sender_name') || '';
@@ -696,7 +868,6 @@
   }
 
   function saveSettings() {
-    localStorage.setItem('arekore_api_key', document.getElementById('apiKeyInput').value.trim());
     localStorage.setItem('arekore_mail_to', document.getElementById('mailToInput').value.trim());
     localStorage.setItem('arekore_mail_cc', document.getElementById('mailCcInput').value.trim());
     localStorage.setItem('arekore_sender_name', document.getElementById('senderNameInput').value.trim());
