@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>アレ・コレ（ARE-KORE）- 現場支援AI</title>
+
+  <!-- iOS / PWA アプリ化設定（オンライン時も無害・ホーム画面時に有効） -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="アレ・コレ">
+
   <style>
     :root {
       --primary: #f59e0b;
@@ -476,37 +482,13 @@
   let currentAttachedImage = null;
   let lastFinalDetails = null;
 
-  /* Service Workerの動的登録（PWAオフラインキャッシュ） */
-  if ('serviceWorker' in navigator) {
-    const swCode = `
-      const CACHE_NAME = 'arekore-cache-v1';
-      self.addEventListener('install', (e) => {
-        e.waitUntil(
-          caches.open(CACHE_NAME).then((cache) => cache.addAll([self.location.href]))
-        );
-        self.skipWaiting();
-      });
-      self.addEventListener('activate', (e) => {
-        e.waitUntil(self.clients.claim());
-      });
-      self.addEventListener('fetch', (e) => {
-        if (e.request.method !== 'GET') return;
-        e.respondWith(
-          fetch(e.request).catch(() => caches.match(e.request))
-        );
-      });
-    `;
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
-  }
-
   window.addEventListener('DOMContentLoaded', () => {
     initAuthFromHash();
     loadSettings();
     initFontSize();
     initNetworkMonitor();
     checkOfflineQueue();
-    addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n電波のない地下・ピット内でも下書き蓄積可能です！');
+    addMessageToUI('ai', '現場支援AI「アレ・コレ」起動しました。\n短文入力または写真添付で指示してください！');
   });
 
   /* URLハッシュ式ワンショット認証（#key=...） */
@@ -546,7 +528,7 @@
       if (navigator.onLine) {
         badge.className = 'network-badge badge-online';
         badge.innerText = 'オンライン';
-        processOfflineQueue(); // 電波復帰時に自動同期
+        processOfflineQueue();
       } else {
         badge.className = 'network-badge badge-offline';
         badge.innerText = '▲ オフライン (圏外)';
@@ -583,14 +565,12 @@
     const queue = getQueue();
     if (queue.length === 0) return;
 
-    // 先頭から順次自動送信
     const item = queue.shift();
     saveQueue(queue);
 
     addMessageToUI('ai', `📡 電波復帰を検知しました。\n保留中の手配（${item.text ? item.text.substring(0, 15) : '写真'}...）を自動送信します。`);
     await sendMessageDirect(item.text, item.image);
 
-    // 次のキューがあれば再帰処理
     if (queue.length > 0) {
       setTimeout(processOfflineQueue, 1500);
     }
